@@ -24,3 +24,17 @@ services:
     command: python /code/app_local.py
     networks:
       - ai_network
+
+  heygem-face2face-file-server:
+    image: node:18-alpine
+    container_name: heygem-face2face-file-server
+    restart: always
+    volumes:
+      - d:/heygem_data/face2face:/app/data
+      - ./file-server:/app/src
+    working_dir: /app
+    ports:
+      - '8384:8384'
+    command: sh -c "cd /app && npm install express multer cors && node src/index.js 8384 /app/data"
+    networks:
+      - ai_network

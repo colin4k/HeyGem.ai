@@ -18,6 +18,20 @@ services:
     command: /bin/bash -c "/opt/conda/envs/python310/bin/python3 tools/api_server.py --listen 0.0.0.0:8080"
     networks:
       - ai_network
+
+  heygem-tts-file-server:
+    image: node:18-alpine
+    container_name: heygem-tts-file-server
+    restart: always
+    volumes:
+      - d:/heygem_data/voice/data:/app/data
+      - ./file-server:/app/src
+    working_dir: /app
+    ports:
+      - '18181:18181'
+    command: sh -c "cd /app && npm install express multer cors && node src/index.js 18181 /app/data"
+    networks:
+      - ai_network
   heygem-asr:
     image: guiji2025/fun-asr
     container_name: heygem-asr
@@ -56,5 +70,19 @@ services:
     ports:
       - '8383:8383'
     command: python /code/app_local.py
+    networks:
+      - ai_network
+
+  heygem-face2face-file-server:
+    image: node:18-alpine
+    container_name: heygem-face2face-file-server
+    restart: always
+    volumes:
+      - d:/heygem_data/face2face:/app/data
+      - ./file-server:/app/src
+    working_dir: /app
+    ports:
+      - '8384:8384'
+    command: sh -c "cd /app && npm install express multer cors && node src/index.js 8384 /app/data"
     networks:
       - ai_network

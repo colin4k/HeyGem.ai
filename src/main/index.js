@@ -6,8 +6,14 @@ import { initDB } from './db/index.js'
 import { registerHandler } from './service/index.js'
 import { init as initInterval } from './interval/interval.js'
 import { registerWebHandles } from './handlers'
+import { initFileServers } from './server/index.js'
+
+// Initialize database and background tasks
 initDB()
 initInterval()
+
+// Initialize file servers for remote file transfer
+initFileServers()
 
 function createWindow() {
   // Create the browser window.
