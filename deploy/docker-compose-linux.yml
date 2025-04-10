@@ -25,7 +25,7 @@ services:
     restart: always
     volumes:
       - /home/colin/data/workspace/heygem_data/voice/data:/app/data
-      - /home/colin/data/workspace/heygem_data/file-server:/app/src
+      - ./file-server:/app/src
     working_dir: /app
     ports:
       - '18181:18181'
@@ -79,7 +79,7 @@ services:
     restart: always
     volumes:
       - /home/colin/data/workspace/heygem_data/face2face:/app/data
-      - /home/colin/data/workspace/heygem_data/file-server:/app/src
+      - ./file-server:/app/src
     working_dir: /app
     ports:
       - '8384:8384'
