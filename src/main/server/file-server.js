@@ -117,7 +117,35 @@ export function createFileServer(port, tempDir) {
       const normalizedPath = path.normalize(filePath).replace(/^\.\.\//, '')
       log.info(`Normalized path: ${normalizedPath}`)
 
-      const fullPath = path.join(tempDir, normalizedPath)
+      // Check if the path contains a category
+      const pathParts = normalizedPath.split('/')
+      log.info(`Path parts:`, pathParts)
+
+      // If the path doesn't have a category, try to infer it
+      let adjustedPath = normalizedPath
+      if (pathParts.length === 1) {
+        // This is just a filename, try to find it in common categories
+        const commonCategories = ['audio', 'model', 'origin_audio', 'temp']
+        let found = false
+
+        for (const category of commonCategories) {
+          const testPath = path.join(tempDir, category, normalizedPath)
+          log.info(`Trying path: ${testPath}`)
+
+          if (fs.existsSync(testPath)) {
+            adjustedPath = path.join(category, normalizedPath)
+            log.info(`Found file in category '${category}'. Adjusted path: ${adjustedPath}`)
+            found = true
+            break
+          }
+        }
+
+        if (!found) {
+          log.info(`Could not find file in any common category`)
+        }
+      }
+
+      const fullPath = path.join(tempDir, adjustedPath)
       log.info(`Full path: ${fullPath}`)
 
       // Check if the file exists
