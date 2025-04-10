@@ -14,7 +14,7 @@ services:
     ports:
       - '18180:8080'
     volumes:
-      - ~/heygem_data/voice/data:/code/data
+      - /home/colin/data/workspace/heygem_data/voice/data:/code/data
     command: /bin/bash -c "/opt/conda/envs/python310/bin/python3 tools/api_server.py --listen 0.0.0.0:8080"
     networks:
       - ai_network
@@ -24,8 +24,8 @@ services:
     container_name: heygem-tts-file-server
     restart: always
     volumes:
-      - ~/heygem_data/voice/data:/app/data
-      - ./file-server:/app/src
+      - /home/colin/data/workspace/heygem_data/voice/data:/app/data
+      - /home/colin/data/workspace/heygem_data/file-server:/app/src
     working_dir: /app
     ports:
       - '18181:18181'
@@ -58,7 +58,7 @@ services:
     runtime: nvidia
     privileged: true
     volumes:
-      - ~/heygem_data/face2face:/code/data
+      - /home/colin/data/workspace/heygem_data/face2face:/code/data
     environment:
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
     deploy:
@@ -78,8 +78,8 @@ services:
     container_name: heygem-face2face-file-server
     restart: always
     volumes:
-      - ~/heygem_data/face2face:/app/data
-      - ./file-server:/app/src
+      - /home/colin/data/workspace/heygem_data/face2face:/app/data
+      - /home/colin/data/workspace/heygem_data/file-server:/app/src
     working_dir: /app
     ports:
       - '8384:8384'
