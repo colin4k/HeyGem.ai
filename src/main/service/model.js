@@ -43,15 +43,33 @@ async function addModel(modelName, videoPath) {
   await extractAudio(modelPath, audioPath)
 
   // Upload video file to face2face server
-  const videoUploadResult = await uploadFile(modelPath, 'face2faceFileServer', 'model')
-  if (!videoUploadResult.success) {
-    throw new Error(`Failed to upload video: ${videoUploadResult.error}`)
+  log.info('Uploading video file to face2face server...')
+  let videoUploadResult;
+  try {
+    videoUploadResult = await uploadFile(modelPath, 'face2faceFileServer', 'model')
+    if (!videoUploadResult.success) {
+      log.error(`Failed to upload video: ${videoUploadResult.error}`)
+      throw new Error(`Failed to upload video: ${videoUploadResult.error}`)
+    }
+    log.info('Video upload successful')
+  } catch (error) {
+    log.error('Error during video upload:', error)
+    throw error
   }
 
   // Upload audio file to TTS server
-  const audioUploadResult = await uploadFile(audioPath, 'ttsFileServer', 'origin_audio')
-  if (!audioUploadResult.success) {
-    throw new Error(`Failed to upload audio: ${audioUploadResult.error}`)
+  log.info('Uploading audio file to TTS server...')
+  let audioUploadResult;
+  try {
+    audioUploadResult = await uploadFile(audioPath, 'ttsFileServer', 'origin_audio')
+    if (!audioUploadResult.success) {
+      log.error(`Failed to upload audio: ${audioUploadResult.error}`)
+      throw new Error(`Failed to upload audio: ${audioUploadResult.error}`)
+    }
+    log.info('Audio upload successful')
+  } catch (error) {
+    log.error('Error during audio upload:', error)
+    throw error
   }
 
   // Train voice model using the uploaded audio
@@ -66,12 +84,23 @@ async function addModel(modelName, videoPath) {
 
   // Insert model info to database
   // Store both local and remote paths
-  const id = insert({
-    modelName,
-    videoPath: videoUploadResult.remotePath, // Remote path on face2face server
-    audioPath: audioUploadResult.remotePath, // Remote path on TTS server
-    voiceId
-  })
+  log.info('Inserting model info to database...')
+  log.info('Model name:', modelName)
+  log.info('Video path:', videoUploadResult.remotePath)
+  log.info('Audio path:', audioUploadResult.remotePath)
+  log.info('Voice ID:', voiceId)
+
+  // Ensure all values are of the correct type for SQLite
+  const modelData = {
+    modelName: String(modelName),
+    videoPath: String(videoUploadResult.remotePath), // Remote path on face2face server
+    audioPath: String(audioUploadResult.remotePath), // Remote path on TTS server
+    voiceId: Number(voiceId)
+  }
+
+  log.info('Prepared model data:', modelData)
+
+  const id = insert(modelData)
 
   return id
 }
@@ -137,13 +166,33 @@ async function page({ page, pageSize, name = '' }) {
 
 async function findModel(modelId) {
   const model = selectByID(modelId)
+  log.info(`Finding model with ID: ${modelId}`)
+  log.info('Model data:', model)
+
+  // Check if model exists
+  if (!model) {
+    log.error(`Model with ID ${modelId} not found`)
+    throw new Error(`Model with ID ${modelId} not found`)
+  }
+
+  // Check if model has video and audio paths
+  if (!model.video_path) {
+    log.warn(`Model ${modelId} has no video path`)
+  }
+  if (!model.audio_path) {
+    log.warn(`Model ${modelId} has no audio path`)
+  }
 
   // Local paths where we'll store the downloaded files
-  const localVideoPath = path.join(assetPath.model, path.basename(model.video_path))
-  const localAudioPath = path.join(assetPath.ttsRoot, path.basename(model.audio_path))
+  const localVideoPath = model.video_path ? path.join(assetPath.model, path.basename(model.video_path)) : null
+  const localAudioPath = model.audio_path ? path.join(assetPath.ttsRoot, path.basename(model.audio_path)) : null
 
-  // Download video if it doesn't exist locally
-  if (!fs.existsSync(localVideoPath)) {
+  log.info(`Local video path: ${localVideoPath}`)
+  log.info(`Local audio path: ${localAudioPath}`)
+
+  // Download video if it doesn't exist locally and we have a path
+  if (model.video_path && !fs.existsSync(localVideoPath)) {
+    log.info(`Video file doesn't exist locally, downloading from server...`)
     try {
       const videoDownloadResult = await downloadFile(
         model.video_path,
@@ -152,14 +201,19 @@ async function findModel(modelId) {
       )
       if (!videoDownloadResult.success) {
         log.error(`Failed to download video: ${videoDownloadResult.error}`)
+      } else {
+        log.info(`Video downloaded successfully to ${localVideoPath}`)
       }
     } catch (error) {
       log.error(`Error downloading video: ${error.message}`)
     }
+  } else if (model.video_path) {
+    log.info(`Video file already exists locally at ${localVideoPath}`)
   }
 
-  // Download audio if it doesn't exist locally
-  if (!fs.existsSync(localAudioPath)) {
+  // Download audio if it doesn't exist locally and we have a path
+  if (model.audio_path && !fs.existsSync(localAudioPath)) {
+    log.info(`Audio file doesn't exist locally, downloading from server...`)
     try {
       const audioDownloadResult = await downloadFile(
         model.audio_path,
@@ -168,16 +222,20 @@ async function findModel(modelId) {
       )
       if (!audioDownloadResult.success) {
         log.error(`Failed to download audio: ${audioDownloadResult.error}`)
+      } else {
+        log.info(`Audio downloaded successfully to ${localAudioPath}`)
       }
     } catch (error) {
       log.error(`Error downloading audio: ${error.message}`)
     }
+  } else if (model.audio_path) {
+    log.info(`Audio file already exists locally at ${localAudioPath}`)
   }
 
   return {
     ...model,
-    video_path: localVideoPath,
-    audio_path: localAudioPath
+    video_path: localVideoPath || '',
+    audio_path: localAudioPath || ''
   }
 }
 

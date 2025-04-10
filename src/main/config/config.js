@@ -6,7 +6,7 @@ const isDev = process.env.NODE_ENV === 'development'
 const isWin = process.platform === 'win32'
 
 // Default to localhost for development, but allow overriding with environment variables
-const DEFAULT_HOST = isDev ? '192.168.4.204' : '127.0.0.1'
+const DEFAULT_HOST = '127.0.0.1' // Always use localhost for development
 const FACE2FACE_HOST = process.env.FACE2FACE_HOST || DEFAULT_HOST
 const TTS_HOST = process.env.TTS_HOST || DEFAULT_HOST
 const FILE_SERVER_HOST = process.env.FILE_SERVER_HOST || DEFAULT_HOST

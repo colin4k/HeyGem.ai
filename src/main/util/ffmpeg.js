@@ -6,6 +6,7 @@ function initFFmpeg() {
   const ffmpegPath = {
     'development-win32': path.join(__dirname, '../../resources/ffmpeg/win-amd64/bin/ffmpeg.exe'),
     'development-linux': path.join(__dirname, '../../resources/ffmpeg/linux-amd64/ffmpeg'),
+    'development-darwin': '/opt/homebrew/bin/ffmpeg', // macOS path
     'production-win32': path.join(
       process.resourcesPath,
       'app.asar.unpacked',
@@ -22,7 +23,8 @@ function initFFmpeg() {
       'ffmpeg',
       'linux-amd64',
       'ffmpeg'
-    )
+    ),
+    'production-darwin': '/opt/homebrew/bin/ffmpeg' // macOS path
   }
 
   if(process.env.NODE_ENV === undefined){
@@ -37,6 +39,7 @@ function initFFmpeg() {
   const ffprobePath = {
     'development-win32': path.join(__dirname, '../../resources/ffmpeg/win-amd64/bin/ffprobe.exe'),
     'development-linux': path.join(__dirname, '../../resources/ffmpeg/linux-amd64/ffprobe'),
+    'development-darwin': '/opt/homebrew/bin/ffprobe', // macOS path
     'production-win32': path.join(
       process.resourcesPath,
       'app.asar.unpacked',
@@ -53,7 +56,8 @@ function initFFmpeg() {
       'ffmpeg',
       'linux-amd64',
       'ffprobe'
-    )
+    ),
+    'production-darwin': '/opt/homebrew/bin/ffprobe' // macOS path
   }
 
   const ffprobePathValue = ffprobePath[`${process.env.NODE_ENV}-${process.platform}`]
