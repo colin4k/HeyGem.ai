@@ -46,12 +46,21 @@ async function addModel(modelName, videoPath) {
   log.info('Uploading video file to face2face server...')
   let videoUploadResult;
   try {
-    videoUploadResult = await uploadFile(modelPath, 'face2faceFileServer', 'model')
+    // Create a copy of the file with a unique name to ensure it's properly saved
+    const tempDir = require('os').tmpdir()
+    const uniqueFileName = `model_${crypto.randomUUID()}${extname}`
+    const tempFilePath = path.join(tempDir, uniqueFileName)
+
+    log.info(`Copying video file to temp location: ${tempFilePath}`)
+    fs.copyFileSync(modelPath, tempFilePath)
+
+    // Upload the video file
+    videoUploadResult = await uploadFile(tempFilePath, 'face2faceFileServer', 'model')
     if (!videoUploadResult.success) {
       log.error(`Failed to upload video: ${videoUploadResult.error}`)
       throw new Error(`Failed to upload video: ${videoUploadResult.error}`)
     }
-    log.info('Video upload successful')
+    log.info(`Video upload successful. Remote path: ${videoUploadResult.remotePath}`)
   } catch (error) {
     log.error('Error during video upload:', error)
     throw error
@@ -61,12 +70,21 @@ async function addModel(modelName, videoPath) {
   log.info('Uploading audio file to TTS server...')
   let audioUploadResult;
   try {
-    audioUploadResult = await uploadFile(audioPath, 'ttsFileServer', 'origin_audio')
+    // Create a copy of the file with a unique name to ensure it's properly saved
+    const tempDir = require('os').tmpdir()
+    const uniqueFileName = `audio_${crypto.randomUUID()}.wav`
+    const tempFilePath = path.join(tempDir, uniqueFileName)
+
+    log.info(`Copying audio file to temp location: ${tempFilePath}`)
+    fs.copyFileSync(audioPath, tempFilePath)
+
+    // Upload the audio file
+    audioUploadResult = await uploadFile(tempFilePath, 'ttsFileServer', 'origin_audio')
     if (!audioUploadResult.success) {
       log.error(`Failed to upload audio: ${audioUploadResult.error}`)
       throw new Error(`Failed to upload audio: ${audioUploadResult.error}`)
     }
-    log.info('Audio upload successful')
+    log.info(`Audio upload successful. Remote path: ${audioUploadResult.remotePath}`)
   } catch (error) {
     log.error('Error during audio upload:', error)
     throw error

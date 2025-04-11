@@ -16,6 +16,8 @@ export function getAllTimbre() {
 }
 
 export async function train(audioPath, lang = 'zh') {
+  log.info(`Training voice model with audio: ${audioPath}, language: ${lang}`)
+
   // For remote paths, we don't need to modify the path format
   // For local paths (during development), we need to upload the file first
   let remotePath = audioPath
@@ -24,15 +26,33 @@ export async function train(audioPath, lang = 'zh') {
   if (audioPath.includes('\\') || audioPath.startsWith('/')) {
     // This is a local path, upload it to the TTS server
     const localPath = audioPath.replace(/\\/g, '/') // Replace backslashes with forward slashes
+    log.info(`Local audio path: ${localPath}`)
+
+    // Make sure the file exists
+    if (!fs.existsSync(localPath)) {
+      log.error(`Audio file does not exist: ${localPath}`)
+      throw new Error(`Audio file does not exist: ${localPath}`)
+    }
+
+    // Create a copy of the file with a unique name to ensure it's properly saved
+    const tempDir = require('os').tmpdir()
+    const uniqueFileName = `train_${crypto.randomUUID()}${path.extname(localPath)}`
+    const tempFilePath = path.join(tempDir, uniqueFileName)
+
+    log.info(`Copying audio file to temp location: ${tempFilePath}`)
+    fs.copyFileSync(localPath, tempFilePath)
 
     // Upload the audio file
-    const uploadResult = await uploadFile(localPath, 'ttsFileServer', 'origin_audio')
+    log.info('Uploading audio file to TTS server...')
+    const uploadResult = await uploadFile(tempFilePath, 'ttsFileServer', 'origin_audio')
     if (!uploadResult.success) {
+      log.error(`Failed to upload audio: ${uploadResult.error}`)
       throw new Error(`Failed to upload audio: ${uploadResult.error}`)
     }
 
     // Use the remote path for the API call
     remotePath = uploadResult.remotePath
+    log.info(`Audio uploaded successfully. Remote path: ${remotePath}`)
   }
 
   // Call the TTS service to preprocess and train

@@ -106,6 +106,15 @@ export async function downloadFile(remotePath, localPath, service) {
   try {
     log.info(`Downloading file from ${service}. Remote path: ${remotePath}, Local path: ${localPath}`)
 
+    // Check if remotePath is valid
+    if (!remotePath) {
+      log.error('Remote path is empty or undefined')
+      return {
+        success: false,
+        error: 'Remote path is empty or undefined'
+      }
+    }
+
     // Create directory for local path if it doesn't exist
     const localDir = path.dirname(localPath)
     if (!fs.existsSync(localDir)) {
@@ -114,18 +123,53 @@ export async function downloadFile(remotePath, localPath, service) {
     }
 
     // Get service URL
-    const url = `${serviceUrl[service]}/file/download`
+    const serviceKey = `${service}FileServer`
+    if (!serviceUrl[serviceKey]) {
+      log.error(`Invalid service: ${service}. Available services: ${Object.keys(serviceUrl).join(', ')}`)
+      return {
+        success: false,
+        error: `Invalid service: ${service}`
+      }
+    }
+
+    const url = `${serviceUrl[serviceKey]}/file/download`
     log.info(`Download URL: ${url}?path=${encodeURIComponent(remotePath)}`)
 
-    // Make request
-    log.info('Sending download request...')
-    const response = await axios.get(
-      url,
-      {
-        params: { path: remotePath },
-        responseType: 'arraybuffer'
+    // Try different path formats if the original fails
+    const pathVariations = [
+      remotePath,
+      remotePath.replace(/\\/g, '/'),
+      path.basename(remotePath)
+    ]
+
+    let response = null
+    let error = null
+
+    // Try each path variation
+    for (const pathVar of pathVariations) {
+      try {
+        log.info(`Trying path variation: ${pathVar}`)
+        response = await axios.get(
+          url,
+          {
+            params: { path: pathVar },
+            responseType: 'arraybuffer'
+          }
+        )
+
+        // If successful, break the loop
+        log.info(`Download successful with path: ${pathVar}`)
+        break
+      } catch (err) {
+        log.warn(`Failed with path ${pathVar}: ${err.message}`)
+        error = err
       }
-    )
+    }
+
+    // If all variations failed, throw the last error
+    if (!response) {
+      throw error || new Error('All download attempts failed')
+    }
 
     log.info(`Download successful. Status: ${response.status}, Content length: ${response.data.length} bytes`)
 

@@ -5,11 +5,40 @@ import { app } from 'electron'
 const isDev = process.env.NODE_ENV === 'development'
 const isWin = process.platform === 'win32'
 
+// Get the actual IP address from the environment or use localhost as fallback
+const getLocalIpAddress = () => {
+  try {
+    const os = require('os')
+    const networkInterfaces = os.networkInterfaces()
+
+    // Find the first non-internal IPv4 address
+    for (const interfaceName in networkInterfaces) {
+      const interfaces = networkInterfaces[interfaceName]
+      for (const iface of interfaces) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error getting local IP address:', error)
+  }
+
+  return '127.0.0.1'
+}
+
 // Default to localhost for development, but allow overriding with environment variables
-const DEFAULT_HOST = '127.0.0.1' // Always use localhost for development
+const DEFAULT_HOST = process.env.DEFAULT_HOST || '127.0.0.1' // Default to localhost
 const FACE2FACE_HOST = process.env.FACE2FACE_HOST || DEFAULT_HOST
 const TTS_HOST = process.env.TTS_HOST || DEFAULT_HOST
 const FILE_SERVER_HOST = process.env.FILE_SERVER_HOST || DEFAULT_HOST
+
+// Log the hosts being used
+console.log('Using hosts:')
+console.log('DEFAULT_HOST:', DEFAULT_HOST)
+console.log('FACE2FACE_HOST:', FACE2FACE_HOST)
+console.log('TTS_HOST:', TTS_HOST)
+console.log('FILE_SERVER_HOST:', FILE_SERVER_HOST)
 
 // Service URLs for API endpoints
 export const serviceUrl = {

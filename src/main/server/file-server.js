@@ -123,9 +123,36 @@ export function createFileServer(port, tempDir) {
 
       // If the path doesn't have a category, try to infer it
       let adjustedPath = normalizedPath
+
+      // List all files in the temp directory to help with debugging
+      log.info('Listing all directories in temp directory:')
+      try {
+        if (fs.existsSync(tempDir)) {
+          const dirs = fs.readdirSync(tempDir)
+          log.info(`Directories in ${tempDir}:`, dirs)
+
+          // List files in each directory
+          for (const dir of dirs) {
+            const dirPath = path.join(tempDir, dir)
+            if (fs.statSync(dirPath).isDirectory()) {
+              try {
+                const files = fs.readdirSync(dirPath)
+                log.info(`Files in ${dirPath}:`, files.slice(0, 10), files.length > 10 ? `... and ${files.length - 10} more` : '')
+              } catch (e) {
+                log.error(`Error listing directory ${dirPath}:`, e.message)
+              }
+            }
+          }
+        } else {
+          log.info(`Temp directory ${tempDir} does not exist`)
+        }
+      } catch (e) {
+        log.error(`Error listing temp directory:`, e.message)
+      }
+
       if (pathParts.length === 1) {
         // This is just a filename, try to find it in common categories
-        const commonCategories = ['audio', 'model', 'origin_audio', 'temp']
+        const commonCategories = ['audio', 'model', 'origin_audio', 'temp', 'default']
         let found = false
 
         for (const category of commonCategories) {
@@ -141,7 +168,36 @@ export function createFileServer(port, tempDir) {
         }
 
         if (!found) {
-          log.info(`Could not find file in any common category`)
+          // Try a recursive search for the file
+          log.info(`Could not find file in common categories. Trying recursive search...`)
+          try {
+            const findFile = (dir, filename) => {
+              const files = fs.readdirSync(dir)
+              for (const file of files) {
+                const filePath = path.join(dir, file)
+                const stat = fs.statSync(filePath)
+                if (stat.isDirectory()) {
+                  const result = findFile(filePath, filename)
+                  if (result) return result
+                } else if (file === filename) {
+                  return filePath
+                }
+              }
+              return null
+            }
+
+            const foundPath = findFile(tempDir, normalizedPath)
+            if (foundPath) {
+              adjustedPath = path.relative(tempDir, foundPath)
+              log.info(`Found file through recursive search: ${foundPath}`)
+              log.info(`Adjusted path: ${adjustedPath}`)
+              found = true
+            } else {
+              log.info(`File not found in recursive search`)
+            }
+          } catch (e) {
+            log.error(`Error during recursive search:`, e.message)
+          }
         }
       }
 

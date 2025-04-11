@@ -29,7 +29,7 @@ services:
     working_dir: /app
     ports:
       - '18181:18181'
-    command: sh -c "cd /app && npm install express multer cors && node src/index.js 18181 /app/data"
+    command: sh -c "cd /app && npm install express multer cors && mkdir -p /app/data/origin_audio /app/data/audio /app/data/temp && chmod -R 777 /app/data && node src/index.js 18181 /app/data"
     networks:
       - ai_network
   heygem-asr:
@@ -83,6 +83,6 @@ services:
     working_dir: /app
     ports:
       - '8384:8384'
-    command: sh -c "cd /app && npm install express multer cors && node src/index.js 8384 /app/data"
+    command: sh -c "cd /app && npm install express multer cors && mkdir -p /app/data/model /app/data/temp && chmod -R 777 /app/data && node src/index.js 8384 /app/data"
     networks:
       - ai_network
